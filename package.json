@@ -1,0 +1,38 @@
+{
+  "name": "ec2-fleet-client",
+  "description": "client for ec2-fleet",
+  "version": "0.1.0",
+  "homepage": "https://github.com/npr/ec2-fleet-client",
+  "author": {
+    "name": "johnymonster",
+    "email": "jnelson11@gmail.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/npr/ec2-fleet-client.git"
+  },
+  "bugs": {
+    "url": "https://github.com/npr/ec2-fleet-client/issues"
+  },
+  "licenses": [
+    {
+      "type": "MIT",
+      "url": "https://github.com/npr/ec2-fleet-client/blob/master/LICENSE-MIT"
+    }
+  ],
+  "main": "lib/ec2-fleet-client",
+  "engines": {
+    "node": ">= 0.8.11"
+  },
+  "scripts": {
+    "test": "grunt test"
+  },
+  "dependencies": {
+      "express":"*",
+      "node-siege":"*"
+  },
+  "devDependencies": {
+    "grunt": "~0.3.15"
+  },
+  "keywords": []
+}
