@@ -52,17 +52,19 @@ app.get('/log', function(req, res) {
 });
 
 app.get('/siege',function(req,res) {
+    console.log('siege request');
     if(_siege.running === false) {
-        if(req.param.c) {
-            var command = decodeURIComponent(new Buffer(req.param.c, 'base64').toString());
+        if(req.query.c) {
+            var command = decodeURIComponent(new Buffer(req.query.c, 'base64').toString());
             if(command.match(/-l/) === null) {
-                command += ' -l ' + config.log;
+                command += ' -l' + config.log;
             }
             _siege.running = true;
             console.log('starting siege');
+            console.log('command:',command);
             siege(command, function(err, stderr, stdout) {
                 _siege.running = false;
-                console.log(stdout);
+                console.log(err, stderr, stdout);
             });
         }
     }
