@@ -1,5 +1,6 @@
 var http = require('http')
   , express = require('express')
+  , fs = require('fs')
   , _ = require('underscore')
   , siege = require('node-siege');
 
@@ -10,7 +11,8 @@ var config = {
     concurrency: 100,
     host: '127.0.0.1',
     port: 8888,
-    controlPort: 8889
+    controlPort: 8889,
+    log: '/home/ubuntu/siege.log'
 };
 
 var stats = {
@@ -21,102 +23,15 @@ var stats = {
     ended_req: 0
 };
 
-var isRunning = false;
-
-//var clients = {};
-//
-//function makeRequest() {
-//    stats.inproc++;
-//    var id = Math.random().toString(36).slice(2);
-//    var req = http.request({host:config.host, port:config.port, agent:false});
-//    req.setNoDelay();
-//
-//    req.on('response', function(res) {
-//        stats.inproc--;
-//        stats.clients++;
-//        clients[id] = req;
-//        //res.setEncoding('utf8');
-//        //res.on('data', function (chunk) {
-//        //  console.log('BODY: ' + chunk);
-//        //});
-//
-//        res.on('end', function() {
-//            if (clients[id]) {
-//                stats.clients--;
-//                delete clients[id];
-//            }
-//            stats.ended_req++;
-//        });
-//        res.on('error', function() {
-//            if (clients[id]) {
-//                stats.clients--;
-//                delete clients[id];
-//            }
-//            stats.errors_resp++;
-//        });
-//    });
-//    req.on('error', function() {
-//        stats.inproc--;
-//        stats.errors_req++;
-//    });
-//
-//    req.end();
-//}
-//
-//// Controlling loop.
-//setInterval(function() {
-//    // Make connections if needed.
-//    while (config.n > stats.clients + stats.inproc && stats.inproc < config.concurrency)
-//        makeRequest();
-//
-//    // Abort connections if needed.
-//    if (config.n < stats.clients) {
-//        var keys = Object.keys(clients).slice(0, stats.clients-config.n);
-//        for (var i = 0; i < keys.length; i++) {
-//            clients[keys[i]].abort();
-//            stats.clients--;
-//            delete clients[keys[i]];
-//        }
-//    }
-//}, 100);
-//
-//// Output stats to console for debugging.
-//// With upstart job, it ends up in /var/log/upstart/client.log.
-//console.log("==== Client Started ===== Time: "+new Date().toISOString())
-//setInterval(function() {
-//    console.log(JSON.stringify(stats));
-//}, 1000);
-//
-//// Controlling server.
-//http.createServer(function (req, res) {
-//    if (req.method === "GET") {
-//        var url = require('url').parse(req.url, true);
-//
-//        if (url.pathname === '/') {
-//            // Return stats on '/'
-//            return res.end(JSON.stringify(stats) + "\n");
-//
-//        } else if (url.pathname === '/set') {
-//            // Set params on '/set', preserving the type of param.
-//            for (var key in url.query)
-//                config[key] = (typeof config[key] == 'number') ? +url.query[key] : url.query[key];
-//            return res.end(JSON.stringify(config) + "\n");
-//
-//        } else if (url.pathname === '/restart') {
-//            // Restart process on '/restart'
-//            require('child_process').exec("sudo restart client", function() {});
-//            return res.end("OK\n");
-//        }
-//    }
-//    res.writeHead(404);
-//    res.end();
-//}).listen(config.controlPort);
-
+var _siege = {
+    running: false,
+    stats : {}
+};
 
 app.get('/',function(req,res){
     res.json({
         stats: stats,
-        running: isRunning
+        siege: _siege
     });
 });
 
@@ -127,20 +42,35 @@ app.get('/set',function(req,res){
     res.json(config);
 });
 
+app.get('/log', function(req, res) {
+    fs.readFile(config.log, 'utf8', function(err, data) {
+        if(err) console.log(err);
+        console.log(data);
+        res.set('Content-Type', 'text/html');
+        res.send(data);
+    });
+});
+
 app.get('/siege',function(req,res) {
-    if(isRunning === false) {
-        isRunning = true;
-        siege('-t10s -c 1 -b -v', function(err, stderr, stdout) {
-            isRunning = false;
-            console.log(stdout);
-        });
+    if(_siege.running === false) {
+        if(req.param.c) {
+            var command = decodeURIComponent(new Buffer(req.param.c, 'base64').toString());
+            if(command.match(/-l/) === null) {
+                command += ' -l ' + config.log;
+            }
+            _siege.running = true;
+            siege(command, function(err, stderr, stdout) {
+                _siege.running = false;
+                console.log(stdout);
+            });
+        }
     }
     res.send('running');
 });
 
 app.get('/restart',function(req,res) {
     require('child_process').exec("sudo restart client", function() {});
-    return res.send('OK');
+    res.send('OK');
 })
 
 /*
