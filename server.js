@@ -18,8 +18,10 @@ var stats = {
     inproc: 0,
     errors_req: 0,
     errors_resp: 0,
-    ended_req: 0,
+    ended_req: 0
 };
+
+var isRunning = false;
 
 //var clients = {};
 //
@@ -112,7 +114,10 @@ var stats = {
 
 
 app.get('/',function(req,res){
-    res.json(stats);
+    res.json({
+        stats: stats,
+        running: isRunning
+    });
 });
 
 app.get('/set',function(req,res){
@@ -123,7 +128,14 @@ app.get('/set',function(req,res){
 });
 
 app.get('/siege',function(req,res) {
-    res.send('OK');
+    if(isRunning === false) {
+        isRunning = true;
+        siege('-t10s -c 1 -b -v', function(err, stderr, stdout) {
+            isRunning = false;
+            console.log(stdout);
+        });
+    }
+    res.send('running');
 });
 
 app.get('/restart',function(req,res) {
