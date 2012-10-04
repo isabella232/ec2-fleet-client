@@ -59,6 +59,7 @@ app.get('/siege',function(req,res) {
                 command += ' -l ' + config.log;
             }
             _siege.running = true;
+            console.log('starting siege');
             siege(command, function(err, stderr, stdout) {
                 _siege.running = false;
                 console.log(stdout);
