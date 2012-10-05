@@ -78,6 +78,7 @@ app.get('/urls', function(req, res) {
             console.log('error writing to file');
         })
     }
+    res.json({response:true});
 });
 
 app.get('/restart',function(req,res) {
