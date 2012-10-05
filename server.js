@@ -71,10 +71,19 @@ app.get('/siege',function(req,res) {
     res.send('running');
 });
 
+app.get('/urls', function(req, res) {
+    if(req.query.urls) {
+        var urls = new Buffer(req.query.urls,'base64');
+        fs.writeFile('/home/ubuntu/urls.txt',urls,function(err){
+            console.log('error writing to file');
+        })
+    }
+});
+
 app.get('/restart',function(req,res) {
     require('child_process').exec("sudo restart client", function() {});
     res.send('OK');
-})
+});
 
 /*
  * GET/POST catch all to surface a 404
