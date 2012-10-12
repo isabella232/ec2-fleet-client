@@ -30,7 +30,6 @@ var _siege = {
 
 app.get('/',function(req,res){
     res.json({
-        stats: stats,
         siege: _siege
     });
 });
@@ -45,7 +44,6 @@ app.get('/set',function(req,res){
 app.get('/log', function(req, res) {
     fs.readFile(config.log, 'utf8', function(err, data) {
         if(err) console.log(err);
-        console.log(data);
         res.set('Content-Type', 'text/html');
         res.send(data);
     });
@@ -53,20 +51,25 @@ app.get('/log', function(req, res) {
 
 app.get('/siege',function(req,res) {
     console.log('siege request');
-    if(_siege.running === false) {
-        if(req.query.c) {
-            var command = decodeURIComponent(new Buffer(req.query.c, 'base64').toString());
-            if(command.match(/-l/) === null) {
-                command += ' -l' + config.log;
-            }
-            _siege.running = true;
-            console.log('starting siege');
-            console.log('command:',command);
-            siege(command, function(err, stderr, stdout) {
-                _siege.running = false;
-                console.log(err, stderr, stdout);
-            });
+    if(_siege.running === false && req.query.c) {
+        var command = new Buffer(req.query.c, 'base64').toString();
+        if(command.match(/-l/) === null) {
+            command += ' -l' + config.log;
         }
+        _siege.running = true;
+        _siege.error = '';
+        console.log('starting siege');
+        console.log('command:',command);
+
+        var s = siege()
+          .args(command)
+          .on('exit',function(){
+              _siege.running = s.running;
+          })
+          .on('error',function(err){
+              _siege.error = err.message;
+          })
+          .run();
     }
     res.send('running');
 });
